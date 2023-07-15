@@ -1,5 +1,5 @@
-import 'package:chat_app/widgets/flutter_widgets/text_form_field.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:chat_app/screens/auth_screen_login.dart';
+import 'package:chat_app/screens/auth_screen_signup.dart';
 import 'package:flutter/material.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -9,149 +9,120 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> {
-  bool isLogin = true;
-  final form = GlobalKey<FormState>();
-  final TextEditingController email = TextEditingController();
-  String _enteredEmail = '';
-  final TextEditingController password = TextEditingController();
-  String _enteredPassword = '';
+class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
+  late TabController tabController = TabController(length: 2, vsync: this);
+  final key = GlobalKey();
+  int tab = 0;
 
-  void submitForm() async {
-    final isValid = form.currentState!.validate();
-
-    if (isValid) {
-      form.currentState!.save();
-      try {
-        if (isLogin) {
-          final userCredential =
-              await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: _enteredEmail,
-            password: _enteredPassword,
-          );
-          print(userCredential);
-        } else {
-          final userCredential =
-              await FirebaseAuth.instance.createUserWithEmailAndPassword(
-            email: _enteredEmail,
-            password: _enteredPassword,
-          );
-          print(userCredential);
-        }
-      } on FirebaseAuthException catch (error) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.message ?? 'Authentication failed'),
-          ),
+  void onClick() {
+    {
+      setState(() {
+        tabController.animateTo(
+          tab = (tab + 1) % 2,
         );
-      }
+        tabController.index = tab;
+      });
     }
   }
 
   @override
-  void dispose() {
-    super.dispose();
-    email.dispose();
-    password.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).primaryColor,
-        centerTitle: true,
-        title: Text(
-          "CHAT APP",
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onPrimary,
+
+    @override
+    void initState() {
+      super.initState();
+      tabController.addListener(() {
+        setState(() {
+          tab = tabController.index;
+        });
+      });
+    }
+
+    @override
+    void dispose() {
+      tabController.dispose();
+      super.dispose();
+    }
+
+    return DefaultTabController(
+      key: key,
+      initialIndex: tab,
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          centerTitle: true,
+          title: Text(
+            "CHAT APP",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(
-                  top: 30,
-                  bottom: 30,
-                  left: 20,
-                  right: 20,
+        body: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                  ),
+                  width: (tab == 0) ? 150 : 50,
+                  child: Image.asset('assets/images/chat.jpeg'),
                 ),
-                width: 200,
-                child: Image.asset('assets/images/chat.jpeg'),
-              ),
-              Card(
-                margin: const EdgeInsets.all(20),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Form(
-                    key: form,
-                    child: Column(
-                      children: [
-                        TextFormFieldInput(
-                          textEditingController: email,
-                          textInputType: TextInputType.emailAddress,
-                          label: 'Email',
-                          isValid: (value) {
-                            if (value == null ||
-                                value.trim().isEmpty ||
-                                !value.contains('@')) {
-                              return 'Enter a valid email';
-                            }
-                            return null;
+                Card(
+                  margin: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      SizedBox(
+                        height: 50,
+                        width: double.maxFinite,
+                        child: TabBar(
+                          controller: tabController,
+                          onTap: (value) {
+                            setState(() {
+                              tab = value;
+                            });
                           },
-                          onSave: (value) => _enteredEmail = value!,
-                        ),
-                        TextFormFieldInput(
-                          textEditingController: password,
-                          label: 'Password',
-                          obscure: true,
-                          isValid: (value) {
-                            if (value == null || value.trim().length < 6) {
-                              return 'Your password is too short';
-                            }
-                            return null;
-                          },
-                          onSave: (value) => _enteredPassword = value!,
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('New user?'),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  isLogin = !isLogin;
-                                });
-                              },
-                              child: Text(isLogin ? 'Sign Up' : 'Log In'),
+                          tabs: [
+                            Text(
+                              'Login',
+                              style: const TextStyle().copyWith(fontSize: 20),
+                            ),
+                            Text(
+                              'SignUp',
+                              style: const TextStyle().copyWith(fontSize: 20),
                             ),
                           ],
                         ),
-                        ElevatedButton(
-                          onPressed: submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                          ),
-                          child: Text(
-                            isLogin ? 'Login' : 'Sign Up',
-                            style: const TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.only(
+                          left: 20,
+                          right: 20,
+                          bottom: 20,
+                          top: 10,
                         ),
-                      ],
-                    ),
+                        height: tab == 0 ? 300 : 400,
+                        width: double.maxFinite,
+                        child: TabBarView(
+                          controller: tabController,
+                          children: [
+                            UserLogin(function: onClick,),
+                            UserSignUp(function: onClick,),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
