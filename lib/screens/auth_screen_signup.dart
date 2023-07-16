@@ -1,6 +1,11 @@
+// ignore_for_file: use_build_context_synchronously
+import 'dart:io';
+
 import 'package:chat_app/widgets/flutter_widgets/text_form_field.dart';
 import 'package:chat_app/widgets/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 class UserSignUp extends StatefulWidget {
@@ -17,26 +22,91 @@ class _UserSignUpState extends State<UserSignUp> {
   final formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
   String _enteredEmail = '';
   String _enteredPassword = '';
+  String _enteredUsername = '';
+  String _enteredName = '';
+  File? pickedImage;
+  bool isAuthenticating = false;
+  bool flag = false;
+
+  @override
+  void dispose() {
+    super.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    usernameController.addListener(() async {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .where("username", isEqualTo: usernameController.text.trim())
+          .get()
+          .then((snapShots) {
+        if (snapShots.size > 0) {
+          flag = true;
+        } else {
+          flag = false;
+        }
+      });
+    });
+  }
 
   void submit() async {
     final _isValid = formKey.currentState!.validate();
 
     if (_isValid) {
+      if (pickedImage == null) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please Select an image for the account'),
+          ),
+        );
+        return;
+      }
       formKey.currentState!.save();
       try {
+        setState(() {
+          isAuthenticating = true;
+        });
         final userCredential =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _enteredEmail,
           password: _enteredPassword,
         );
+        print(userCredential);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Saving user credentials'),
           ),
         );
-        print(userCredential);
+
+        final userProfile = FirebaseStorage.instance
+            .ref()
+            .child('user_images')
+            .child('pfp')
+            .child('${userCredential.user!.uid}.jpg');
+
+        await userProfile.putFile(pickedImage!);
+
+        final imageUrl = await userProfile.getDownloadURL();
+        print(imageUrl);
+
+        FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .set({
+          'name': _enteredName,
+          'username': _enteredUsername,
+          'email': _enteredEmail,
+          'imageUrl': imageUrl,
+        });
 
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: _enteredEmail,
@@ -48,6 +118,9 @@ class _UserSignUpState extends State<UserSignUp> {
         );
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        setState(() {
+          isAuthenticating = false;
+        });
       }
     }
   }
@@ -61,7 +134,20 @@ class _UserSignUpState extends State<UserSignUp> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const UserImagePicker(),
+            UserImagePicker(
+              onImagePicked: (image) => pickedImage = image,
+            ),
+            TextFormFieldInput(
+              textEditingController: nameController,
+              label: 'Name',
+              isValid: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Enter name!';
+                }
+                return null;
+              },
+              onSave: (value) => _enteredName = value!,
+            ),
             TextFormFieldInput(
               textEditingController: emailController,
               label: 'Email',
@@ -74,6 +160,19 @@ class _UserSignUpState extends State<UserSignUp> {
                 return null;
               },
               onSave: (value) => _enteredEmail = value!,
+            ),
+            TextFormFieldInput(
+              textEditingController: usernameController,
+              label: 'Username',
+              isValid: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Enter a valid username';
+                } else if (flag) {
+                  return 'Choose another username';
+                }
+                return null;
+              },
+              onSave: (value) => _enteredUsername = value!,
             ),
             TextFormFieldInput(
               textEditingController: passwordController,
@@ -99,18 +198,20 @@ class _UserSignUpState extends State<UserSignUp> {
                 ),
               ],
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-              ),
-              onPressed: submit,
-              child: Text(
-                'Sign Up',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                ),
-              ),
-            ),
+            isAuthenticating
+                ? const CircularProgressIndicator.adaptive()
+                : ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                    onPressed: submit,
+                    child: Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
           ],
         ),
       ),

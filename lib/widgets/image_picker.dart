@@ -1,11 +1,13 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class UserImagePicker extends StatefulWidget {
-  const UserImagePicker({super.key});
-
+  const UserImagePicker({
+    super.key,
+    required this.onImagePicked,
+  });
+  final void Function(File image) onImagePicked;
   @override
   State<UserImagePicker> createState() => UserImagePickerState();
 }
@@ -22,6 +24,7 @@ class UserImagePickerState extends State<UserImagePicker> {
     setState(() {
       pickedImageFile = File(pickedImage.path);
     });
+    widget.onImagePicked(pickedImageFile!);
   }
 
   @override
@@ -32,7 +35,7 @@ class UserImagePickerState extends State<UserImagePicker> {
           radius: 50,
           backgroundColor: Colors.grey,
           foregroundImage:
-              pickedImageFile != null ? FileImage(pickedImageFile!) : null,
+              pickedImageFile == null ? null : FileImage(pickedImageFile!),
         ),
         Positioned(
           top: 60,

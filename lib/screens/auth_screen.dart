@@ -27,7 +27,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-
     @override
     void initState() {
       super.initState();
@@ -53,7 +52,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           backgroundColor: Theme.of(context).colorScheme.primary,
           centerTitle: true,
           title: Text(
-            "CHAT APP",
+            "C H A T  A P P",
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
@@ -65,13 +64,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                Container(
+                AnimatedContainer(
+                  curve: Curves.easeInOut,
+                  duration: const Duration(milliseconds: 250),
                   margin: const EdgeInsets.only(
                     bottom: 20,
                     left: 20,
                     right: 20,
                   ),
-                  width: (tab == 0) ? 150 : 50,
+                  width: (tab == 0) ? 150 : 0,
                   child: Image.asset('assets/images/chat.jpeg'),
                 ),
                 Card(
@@ -101,20 +102,26 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
-                      Container(
+                      AnimatedContainer(
+                        curve: Curves.easeInOut,
+                        duration: const Duration(milliseconds: 250),
                         padding: const EdgeInsets.only(
                           left: 20,
                           right: 20,
                           bottom: 20,
                           top: 10,
                         ),
-                        height: tab == 0 ? 300 : 400,
+                        height: tab == 0 ? 300 : 500,
                         width: double.maxFinite,
                         child: TabBarView(
                           controller: tabController,
                           children: [
-                            UserLogin(function: onClick,),
-                            UserSignUp(function: onClick,),
+                            UserLogin(
+                              function: onClick,
+                            ),
+                            UserSignUp(
+                              function: onClick,
+                            ),
                           ],
                         ),
                       ),

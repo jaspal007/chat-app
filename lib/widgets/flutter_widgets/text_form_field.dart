@@ -8,7 +8,7 @@ class TextFormFieldInput extends StatefulWidget {
     this.textInputType = TextInputType.text,
     required this.label,
     this.obscure = false,
-    required this.isValid,
+    this.isValid,
     //required this.textFieldValue,
     required this.onSave,
   });
