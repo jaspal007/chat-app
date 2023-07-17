@@ -58,9 +58,9 @@ class _UserSignUpState extends State<UserSignUp> {
   }
 
   void submit() async {
-    final _isValid = formKey.currentState!.validate();
+    final isValid = formKey.currentState!.validate();
 
-    if (_isValid) {
+    if (isValid) {
       if (pickedImage == null) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
